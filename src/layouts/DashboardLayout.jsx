@@ -1,12 +1,13 @@
-import { NavLink, Outlet, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation, useParams } from "react-router-dom";
 
 import { useFilters } from "../context/FiltersContext.jsx";
 
 const NAV_ITEMS = [
   { to: "/overview", label: "CEO Overview" },
-  { to: "/comercial", label: "Comercial" },
+  { to: "/comercial/montseguro", label: "Comercial", match: "/comercial" },
   { to: "/marketing", label: "Marketing" },
-  { to: "/empresas", label: "Empresas" },
+  { to: "/empresas/montseguro", label: "Empresas", match: "/empresas" },
   { to: "/insights", label: "Insights" },
 ];
 
@@ -25,6 +26,7 @@ export default function DashboardLayout() {
 }
 
 function Sidebar() {
+  const location = useLocation();
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-ink text-white/90 px-6 py-8">
       <div className="mb-10">
@@ -32,21 +34,22 @@ function Sidebar() {
         <p className="text-xs text-white/50 mt-1 tracking-wide">Dashboard Executivo</p>
       </div>
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `px-3 py-2.5 rounded text-sm transition-colors border-l-2 ${
-                isActive
+        {NAV_ITEMS.map((item) => {
+          const active = location.pathname.startsWith(item.match || item.to);
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={`px-3 py-2.5 rounded text-sm transition-colors border-l-2 ${
+                active
                   ? "border-gold bg-white/5 text-white"
                   : "border-transparent text-white/60 hover:text-white hover:bg-white/5"
-              }`
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
+              }`}
+            >
+              {item.label}
+            </NavLink>
+          );
+        })}
       </nav>
       <div className="mt-auto text-[11px] text-white/35 leading-relaxed">
         Montseguro · Prop5 · TechBrabo
@@ -55,16 +58,49 @@ function Sidebar() {
   );
 }
 
+/**
+ * Barra de filtros globais.
+ *
+ * CORREÇÃO DE AUDITORIA: nas rotas /comercial/:company e /empresas/:company
+ * a empresa é escolhida exclusivamente pelas tabs da própria página — o
+ * seletor "Empresa" some daqui (`routeCompany` presente). Nessas rotas, os
+ * dropdowns de Canal/Campanha/Vendedor são escopados pela empresa da URL
+ * (`effectiveCompany`), nunca pelo filtro global `filters.company` (que ali
+ * nem é usado). Isso elimina a causa raiz do bug em que o vendedor
+ * selecionado podia pertencer a uma empresa diferente da que estava sendo
+ * exibida, fazendo a query no backend retornar zero resultados.
+ */
 function FilterBar() {
-  const { filters, monthOptions, options, loadingOptions, setMonth, setCompany, setChannel, setCampaign, setSalesperson } =
-    useFilters();
-  const { slug } = useParams();
+  const {
+    filters,
+    monthOptions,
+    options,
+    loadingOptions,
+    setMonth,
+    setCompany,
+    setChannel,
+    setCampaign,
+    setSalesperson,
+    clearMismatchedSelections,
+  } = useFilters();
+  const { company: routeCompany } = useParams();
+
+  const effectiveCompany = routeCompany || filters.company;
+
+  // Sempre que a empresa efetivamente exibida muda (troca de aba na rota OU
+  // troca no seletor global), remove qualquer vendedor/campanha selecionado
+  // que não pertença mais a ela. Torna estruturalmente impossível enviar ao
+  // backend uma combinação empresa+vendedor incompatível.
+  useEffect(() => {
+    if (!loadingOptions) clearMismatchedSelections(effectiveCompany);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveCompany, loadingOptions]);
 
   const campaignsForCompany = options.campaigns.filter(
-    (c) => !filters.company || c.company === filters.company
+    (c) => !effectiveCompany || c.company === effectiveCompany
   );
   const salespeopleForCompany = options.salespeople.filter(
-    (s) => !filters.company || s.company === filters.company
+    (s) => !effectiveCompany || s.company === effectiveCompany
   );
 
   return (
@@ -79,18 +115,8 @@ function FilterBar() {
         ))}
       </Select>
 
-      {!slug && (
-        <Select
-          label="Empresa"
-          value={filters.company}
-          onChange={(v) => {
-            setCompany(v);
-            setChannel("");
-            setCampaign("");
-            setSalesperson("");
-          }}
-          disabled={loadingOptions}
-        >
+      {!routeCompany && (
+        <Select label="Empresa" value={filters.company} onChange={setCompany} disabled={loadingOptions}>
           <option value="">Todas</option>
           {options.companies.map((c) => (
             <option key={c.slug} value={c.slug}>

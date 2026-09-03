@@ -1,5 +1,6 @@
-import { NavLink, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
+import CompanyTabs from "../components/CompanyTabs.jsx";
 import DataTable from "../components/DataTable.jsx";
 import FunnelChart from "../components/FunnelChart.jsx";
 import KpiCard from "../components/KpiCard.jsx";
@@ -9,21 +10,15 @@ import { ErrorState, LoadingState } from "../components/States.jsx";
 import { useFilters } from "../context/FiltersContext.jsx";
 import { useApiData } from "../hooks/useApiData.js";
 import { dashboardApi } from "../services/api.js";
-import { formatCompactCurrency, formatNumber, formatPercent } from "../utils/format.js";
-
-const COMPANIES = [
-  { slug: "montseguro", label: "Montseguro" },
-  { slug: "prop5", label: "Prop5" },
-  { slug: "techbrabo", label: "TechBrabo" },
-];
+import { formatCompactCurrency, formatPercent } from "../utils/format.js";
 
 export default function Companies() {
-  const { slug = "montseguro" } = useParams();
-  const { filters } = useFilters();
+  const { company } = useParams();
+  const { filters, filtersKey } = useFilters();
 
   const { data, loading, error } = useApiData(
-    () => dashboardApi.getCompanyDetail(slug, filters),
-    [slug, filters.month, filters.channel, filters.campaign, filters.salesperson]
+    () => dashboardApi.getCompanyDetail(company, filters),
+    [company, filtersKey]
   );
 
   return (
@@ -31,23 +26,13 @@ export default function Companies() {
       <div>
         <h1 className="font-display text-3xl">Empresas</h1>
         <p className="text-sm text-muted mt-1">Cada negócio com sua própria lógica de funil e receita.</p>
-        <nav className="flex gap-2 mt-4">
-          {COMPANIES.map((c) => (
-            <NavLink
-              key={c.slug}
-              to={`/empresas/${c.slug}`}
-              className={({ isActive }) =>
-                `px-3 py-1.5 text-sm rounded-sm border ${
-                  isActive || (slug === c.slug)
-                    ? "bg-ink text-white border-ink"
-                    : "border-line text-muted hover:text-ink"
-                }`
-              }
-            >
-              {c.label}
-            </NavLink>
-          ))}
-        </nav>
+        {/*
+          Único ponto de seleção de empresa nesta página. O antigo seletor
+          "Empresa" da barra de filtros global foi removido para esta rota
+          (ver DashboardLayout.jsx) para não haver dois controles
+          concorrentes decidindo a mesma coisa.
+        */}
+        <CompanyTabs basePath="/empresas" />
       </div>
 
       {loading && <LoadingState />}
@@ -65,13 +50,14 @@ export default function Companies() {
               />
               <KpiCard label="Realizado" value={formatCompactCurrency(data.overview.realized)} />
               <KpiCard
+                label="Ticket médio"
+                value={formatCompactCurrency(data.overview.avg_ticket)}
+                hint={`${data.overview.sales_count ?? 0} vendas fechadas no mês`}
+              />
+              <KpiCard
                 label="Projeção de fechamento"
                 value={formatCompactCurrency(data.overview.forecast)}
                 hint={`${formatPercent(data.overview.forecast_pct)} da meta`}
-              />
-              <KpiCard
-                label="Necessidade diária"
-                value={data.overview.daily_need !== null ? formatCompactCurrency(data.overview.daily_need) : "Meta atingida"}
               />
             </div>
           </Section>
@@ -103,10 +89,11 @@ export default function Companies() {
             <DataTable
               columns={[
                 { key: "salesperson", label: "Vendedor" },
-                { key: "opportunities", label: "Oportunidades", align: "right" },
-                { key: "won", label: "Vendas", align: "right" },
+                { key: "opportunities", label: "Oportunidades (mês)", align: "right" },
+                { key: "won", label: "Vendas fechadas", align: "right" },
                 { key: "conversion_pct", label: "Conversão", align: "right", render: (r) => formatPercent(r.conversion_pct) },
                 { key: "revenue", label: "Receita", align: "right", render: (r) => formatCompactCurrency(r.revenue) },
+                { key: "avg_ticket", label: "Ticket médio", align: "right", render: (r) => formatCompactCurrency(r.avg_ticket) },
               ]}
               rows={data.salesperson_ranking}
             />

@@ -18,11 +18,11 @@ const TYPE_LABEL = {
 };
 
 export default function Insights() {
-  const { filters } = useFilters();
-  const { data, loading, error } = useApiData(
-    () => dashboardApi.getInsights(filters),
-    [filters.month, filters.company]
-  );
+  const { filters, filtersKey } = useFilters();
+  // CORREÇÃO DE AUDITORIA: dependência antiga ignorava canal/campanha/
+  // vendedor, então esses filtros não recarregavam os alertas mesmo já
+  // sendo aplicados pelo backend (build_insights -> funnel_data/marketing_table).
+  const { data, loading, error } = useApiData(() => dashboardApi.getInsights(filters), [filtersKey]);
 
   return (
     <div className="flex flex-col gap-6">

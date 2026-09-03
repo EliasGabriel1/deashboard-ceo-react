@@ -1,3 +1,6 @@
+import { useParams } from "react-router-dom";
+
+import CompanyTabs from "../components/CompanyTabs.jsx";
 import DataTable from "../components/DataTable.jsx";
 import FunnelChart from "../components/FunnelChart.jsx";
 import KpiCard from "../components/KpiCard.jsx";
@@ -10,12 +13,12 @@ import { dashboardApi } from "../services/api.js";
 import { formatCompactCurrency, formatNumber, formatPercent } from "../utils/format.js";
 
 export default function Commercial() {
-  const { filters, options } = useFilters();
-  const activeCompany = filters.company || "montseguro";
+  const { company } = useParams();
+  const { filters, filtersKey } = useFilters();
 
   const { data, loading, error } = useApiData(
-    () => dashboardApi.getCommercial({ ...filters, company: activeCompany }),
-    [filters.month, activeCompany, filters.channel, filters.campaign, filters.salesperson]
+    () => dashboardApi.getCommercial({ ...filters, company }),
+    [company, filtersKey]
   );
 
   return (
@@ -23,14 +26,9 @@ export default function Commercial() {
       <div>
         <h1 className="font-display text-3xl">Comercial</h1>
         <p className="text-sm text-muted mt-1">
-          Funil, conversão etapa-a-etapa, pipeline e produtividade —{" "}
-          {!filters.company && (
-            <span>
-              exibindo <strong>{options.companies.find((c) => c.slug === activeCompany)?.name || activeCompany}</strong>{" "}
-              (selecione uma empresa no filtro para trocar).
-            </span>
-          )}
+          Funil, conversão etapa-a-etapa, pipeline e produtividade por empresa.
         </p>
+        <CompanyTabs basePath="/comercial" />
       </div>
 
       {loading && <LoadingState />}
@@ -39,17 +37,27 @@ export default function Commercial() {
       {data && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard label="Leads no mês" value={formatNumber(data.funnel.total_leads)} />
-            <KpiCard label="Vendas" value={formatNumber(data.funnel.won)} />
-            <KpiCard label="Conversão geral" value={formatPercent(data.funnel.overall_conversion_pct)} />
+            <KpiCard label="Leads no mês (coorte)" value={formatNumber(data.funnel.total_leads)} />
+            <KpiCard label="Vendas fechadas no mês" value={formatNumber(data.sales.won_count)} />
+            <KpiCard
+              label="Ticket médio"
+              value={formatCompactCurrency(data.sales.avg_ticket)}
+              hint="Receita fechada ÷ vendas fechadas no período"
+            />
             <KpiCard
               label="Ciclo médio"
               value={data.funnel.avg_cycle_days !== null ? `${data.funnel.avg_cycle_days} dias` : "—"}
             />
           </div>
 
-          <Section title="Funil comercial" subtitle="Volume por etapa e conversão em relação à etapa anterior">
+          <Section
+            title="Funil comercial"
+            subtitle="Volume por etapa e conversão em relação à etapa anterior — coorte de leads criados no mês"
+          >
             <FunnelChart stages={data.funnel.stages} />
+            <p className="text-xs text-muted mt-3">
+              Conversão geral da coorte: {formatPercent(data.funnel.overall_conversion_pct)}
+            </p>
           </Section>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -75,8 +83,8 @@ export default function Commercial() {
               <DataTable
                 columns={[
                   { key: "salesperson", label: "Vendedor" },
-                  { key: "opportunities", label: "Oportunidades", align: "right" },
-                  { key: "won", label: "Vendas", align: "right" },
+                  { key: "opportunities", label: "Oportunidades (mês)", align: "right" },
+                  { key: "won", label: "Vendas fechadas", align: "right" },
                   {
                     key: "conversion_pct",
                     label: "Conversão",
@@ -88,6 +96,12 @@ export default function Commercial() {
                     label: "Receita",
                     align: "right",
                     render: (r) => formatCompactCurrency(r.revenue),
+                  },
+                  {
+                    key: "avg_ticket",
+                    label: "Ticket médio",
+                    align: "right",
+                    render: (r) => formatCompactCurrency(r.avg_ticket),
                   },
                 ]}
                 rows={data.salesperson_ranking}

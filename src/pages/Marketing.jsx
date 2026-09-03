@@ -8,11 +8,12 @@ import { dashboardApi } from "../services/api.js";
 import { formatCompactCurrency, formatNumber, formatPercent } from "../utils/format.js";
 
 export default function Marketing() {
-  const { filters } = useFilters();
-  const { data, loading, error } = useApiData(
-    () => dashboardApi.getMarketing(filters),
-    [filters.month, filters.company, filters.channel, filters.campaign]
-  );
+  const { filters, filtersKey } = useFilters();
+  // CORREÇÃO DE AUDITORIA: dependência antiga não incluía filters.salesperson,
+  // então trocar o vendedor não recarregava a tabela mesmo depois de o
+  // backend passar a aplicar esse filtro (marketing_table). filtersKey
+  // cobre todos os filtros de uma vez.
+  const { data, loading, error } = useApiData(() => dashboardApi.getMarketing(filters), [filtersKey]);
 
   return (
     <div className="flex flex-col gap-6">

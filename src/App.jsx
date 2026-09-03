@@ -13,10 +13,11 @@ export default function App() {
       <Route element={<DashboardLayout />}>
         <Route index element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={<Overview />} />
-        <Route path="/comercial" element={<Commercial />} />
+        <Route path="/comercial" element={<Navigate to="/comercial/montseguro" replace />} />
+        <Route path="/comercial/:company" element={<Commercial />} />
         <Route path="/marketing" element={<Marketing />} />
-        <Route path="/empresas" element={<Companies />} />
-        <Route path="/empresas/:slug" element={<Companies />} />
+        <Route path="/empresas" element={<Navigate to="/empresas/montseguro" replace />} />
+        <Route path="/empresas/:company" element={<Companies />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Route>
