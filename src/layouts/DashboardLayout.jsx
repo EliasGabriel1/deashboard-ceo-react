@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation, useParams } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext.jsx";
 import { useFilters } from "../context/FiltersContext.jsx";
 
 const NAV_ITEMS = [
@@ -27,6 +28,14 @@ export default function DashboardLayout() {
 
 function Sidebar() {
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-ink text-white/90 px-6 py-8">
       <div className="mb-10">
@@ -51,8 +60,18 @@ function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-auto text-[11px] text-white/35 leading-relaxed">
-        Montseguro · Prop5 · TechBrabo
+      <div className="mt-auto pt-6 border-t border-white/10">
+        <p className="text-sm text-white/80 truncate">{user?.display_name}</p>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="text-xs text-white/45 hover:text-white mt-1 transition-colors"
+        >
+          Sair
+        </button>
+        <p className="text-[11px] text-white/35 leading-relaxed mt-3">
+          Montseguro · Prop5 · TechBrabo
+        </p>
       </div>
     </aside>
   );
@@ -106,6 +125,7 @@ function FilterBar() {
   return (
     <header className="border-b border-line bg-panel px-6 md:px-10 py-3 flex flex-wrap items-center gap-3">
       <span className="font-display text-lg md:hidden mr-2">Grupo Mont</span>
+      <MobileLogout />
 
       <Select label="Período" value={filters.month} onChange={setMonth} disabled={loadingOptions}>
         {monthOptions.map((m) => (
@@ -169,5 +189,22 @@ function Select({ label, value, onChange, disabled, children }) {
         {children}
       </select>
     </label>
+  );
+}
+
+function MobileLogout() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="md:hidden text-xs text-muted hover:text-ink ml-auto"
+      onClick={() => {
+        logout();
+        navigate("/login", { replace: true });
+      }}
+    >
+      Sair
+    </button>
   );
 }
