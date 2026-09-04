@@ -8,10 +8,10 @@ export default function FunnelChart({ stages }) {
         const width = Math.max((stage.count / max) * 100, 3);
         return (
           <div key={stage.stage} className="flex items-center gap-3">
-            <span className="text-xs text-muted w-40 shrink-0 truncate" title={stage.label}>
+            <span className="text-xs text-muted w-24 md:w-40 shrink-0 truncate" title={stage.label}>
               {stage.label}
             </span>
-            <div className="flex-1 bg-paper rounded-sm h-7 relative overflow-hidden">
+            <div className="flex-1 min-w-0 bg-paper rounded-sm h-7 relative overflow-hidden">
               <div
                 className="h-full bg-accent/85 rounded-sm flex items-center justify-end px-2"
                 style={{ width: `${width}%` }}
@@ -19,7 +19,7 @@ export default function FunnelChart({ stages }) {
                 <span className="text-[11px] text-white font-medium">{stage.count}</span>
               </div>
             </div>
-            <span className="text-xs text-muted w-14 text-right shrink-0">
+            <span className="text-xs text-muted w-10 md:w-14 text-right shrink-0">
               {idx === 0 ? "" : `${stage.conversion_from_previous ?? 0}%`}
             </span>
           </div>

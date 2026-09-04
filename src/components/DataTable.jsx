@@ -8,7 +8,7 @@ export default function DataTable({ columns, rows, emptyMessage = "Sem dados par
   }
 
   return (
-    <div className="overflow-x-auto -mx-1">
+    <div className="overflow-x-auto -mx-1" style={{ WebkitOverflowScrolling: "touch" }}>
       <table className="w-full text-sm min-w-[560px]">
         <thead>
           <tr className="border-b border-line text-left">
